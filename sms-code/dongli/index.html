@@ -1,1 +1,218 @@
 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>📱 【动力跃博】短信兑换码提取工具</title>
+    <style>
+        body{font-family:"Microsoft YaHei",Arial,Helvetica,sans-serif;margin:24px;background:#fafafb;color:#222}
+        h1{font-size:20px;margin-bottom:10px}
+        textarea#smsInput{width:100%;height:180px;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;resize:vertical}
+        button{padding:8px 12px;margin-right:8px;border:none;border-radius:6px;background:#007bff;color:#fff;cursor:pointer}
+        button:hover{opacity:0.92}
+        .green{background:#28a745}
+        .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-top:16px}
+        .catHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .catTitle{font-weight:600;color:#0366d6}
+        textarea.codes{width:100%;min-height:80px;padding:8px;font-family:monospace;font-size:13px;white-space:pre-wrap;resize:vertical}
+        .invalid{color:#b02a37;background:#fff0f0;padding:8px;border-radius:6px;margin-top:12px}
+        .small{font-size:13px;color:#666}
+        .count{font-weight:600;margin-left:8px;color:#333}
+        .btn-copy{padding:6px 10px;border-radius:6px;background:#20b2aa;color:white;border:none;cursor:pointer;margin-left:8px}
+        .points{font-weight:bold;color:#e67e22;margin-left:10px;}
+        .total{font-size:18px;font-weight:bold;margin-top:10px;color:#c0392b}
+        #summary{margin-bottom:20px}
+        .info{background:#e3f2fd;padding:10px;border-radius:6px;margin-bottom:16px;font-size:14px}
+    </style>
+</head>
+<body>
+<h1>📱 【动力跃博】短信兑换码提取工具</h1>
+
+<div class="info">
+    <strong>支持格式：</strong><br>
+    • 乐刻运动（月）运动畅享 - 提取10位兑换码<br>
+    • 乐刻运动（月）运动畅享（精品馆可用）- 提取10位兑换码<br>
+    • 超级猩猩-全国通用 - 提取16位兑换码<br>
+    • 支持多条短信一次性处理
+</div>
+
+<textarea id="smsInput" placeholder="把【动力跃博】短信整段粘贴到这里（支持多条短信一次性粘贴）..."></textarea>
+<br/>
+<button onclick="extractCodes()">提取兑换码</button>
+<button class="green" onclick="copyAll()">复制所有兑换码</button>
+
+<!-- 汇总区域 -->
+<div id="summary">
+    <div id="total" class="total"></div>
+    <div id="invalids" class="invalid"></div>
+</div>
+
+<div id="output"></div>
+
+<script>
+    function cleanCodeRaw(s){
+        if(!s) return "";
+        let t = s.replace(/^[\s\W]+|[\s\W]+$/g, "");
+        t = t.replace(/[。。,，;；\s]/g, "");
+        t = t.replace(/[^A-Za-z0-9]/g, "");
+        return t;
+    }
+
+    function extractCodes(){
+        const raw = document.getElementById("smsInput").value || "";
+        const out = document.getElementById("output");
+        out.innerHTML = "";
+        document.getElementById("total").innerHTML = "";
+        document.getElementById("invalids").innerHTML = "";
+
+        if(!raw.trim()){
+            out.innerHTML = '<div class="card"><p class="small">请先粘贴短信内容，然后点击「提取兑换码」。</p></div>';
+            return;
+        }
+
+        // 按【动力跃博】分割短信
+        const segments = raw.split(/(?=【动力跃博】)/g).map(s=>s.trim()).filter(Boolean);
+        const grouped = {};
+        const invalids = [];
+
+        segments.forEach((seg, idx) => {
+            // 更简单直接的方法：查找"验证码"后面的内容
+            const codeIndex = seg.indexOf('验证码');
+            if(codeIndex === -1) return;
+            
+            let codeSection = "";
+            
+            // 检查是否有方括号格式：验证码[...]
+            const bracketMatch = seg.match(/验证码\[([^\]]+)\]/);
+            if(bracketMatch) {
+                codeSection = bracketMatch[1];
+            } else {
+                // 没有方括号，从"验证码"开始提取到句号或"兑换方式"或"产品详情"
+                const afterCode = seg.substring(codeIndex + 3); // 跳过"验证码"3个字符
+                const endIndex = Math.min(
+                    afterCode.indexOf('。') !== -1 ? afterCode.indexOf('。') : afterCode.length,
+                    afterCode.indexOf('兑换方式') !== -1 ? afterCode.indexOf('兑换方式') : afterCode.length,
+                    afterCode.indexOf('产品详情') !== -1 ? afterCode.indexOf('产品详情') : afterCode.length
+                );
+                codeSection = afterCode.substring(0, endIndex);
+            }
+            
+            if(!codeSection.trim()) return;
+            
+            // 分割验证码
+            const rawCodes = codeSection.split(/[,，\n\r;；\s]+/).map(x=>x.trim()).filter(Boolean);
+
+            // 判断是乐刻还是超级猩猩
+            if(/乐刻/.test(seg)){
+                // 判断是否是精品馆
+                const isPremium = /精品馆可用/.test(seg);
+                const productType = isPremium ? "（月）运动畅享（精品馆可用）" : "（月）运动畅享";
+                const price = isPremium ? 299 : 239;
+                
+                const cat = `乐刻运动${productType}`;
+                
+                if(!grouped[cat]) grouped[cat] = {codes:[], count:0, price:price, totalValue:0};
+                rawCodes.forEach(rc=>{
+                    const c = cleanCodeRaw(rc);
+                    if(c.length===10){
+                        grouped[cat].codes.push(c);
+                        grouped[cat].count++;
+                        grouped[cat].totalValue += price;
+                    } else {
+                        invalids.push({code:rc,cleaned:c,reason:`长度应为10（实际 ${c.length}）`,segment:idx+1,category:cat});
+                    }
+                });
+            }
+            else if(/超级猩猩/.test(seg)){
+                const cat = `超级猩猩-全国通用`;
+                const price = 89;
+                
+                if(!grouped[cat]) grouped[cat] = {codes:[], count:0, price:price, totalValue:0};
+                rawCodes.forEach(rc=>{
+                    const c = cleanCodeRaw(rc);
+                    if(c.length===16){
+                        grouped[cat].codes.push(c);
+                        grouped[cat].count++;
+                        grouped[cat].totalValue += price;
+                    } else {
+                        invalids.push({code:rc,cleaned:c,reason:`长度应为16（实际 ${c.length}）`,segment:idx+1,category:cat});
+                    }
+                });
+            } else {
+                rawCodes.forEach(rc=>{
+                    const c = cleanCodeRaw(rc);
+                    invalids.push({code:rc,cleaned:c,reason:`未识别服务`,segment:idx+1,category:"未知"});
+                });
+            }
+        });
+
+        let totalCodes = 0;
+        let totalValue = 0;
+        Object.keys(grouped).forEach(cat=>{
+            totalCodes += grouped[cat].count;
+            totalValue += grouped[cat].totalValue;
+        });
+
+        // 上方显示总兑换码数量和总价值
+        document.getElementById("total").textContent = `总消耗积分：${totalValue}`;
+
+        // 上方显示无效兑换码
+        if(invalids.length>0){
+            document.getElementById("invalids").innerHTML = `<strong>被过滤/无效兑换码（共 ${invalids.length} 个）</strong>
+        <pre>${invalids.map(it=>`段${it.segment} | 类别:${it.category} | 原码:"${it.code}" | 清洗后:"${it.cleaned}" | ${it.reason}`).join("\n")}</pre>`;
+        }
+
+        // 生成每类兑换码卡片
+        Object.keys(grouped).forEach(cat=>{
+            const {codes, count, price, totalValue} = grouped[cat];
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const header = document.createElement("div");
+            header.className = "catHeader";
+            header.innerHTML = `
+        <div class="catTitle">${cat}
+            <span class="count">(${count}个)</span>
+            <span class="points">单价: ${price}元 | 总价值: ${totalValue}元</span>
+        </div>
+        `;
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "btn-copy";
+            copyBtn.textContent = "复制本类";
+
+            const copiedSpan = document.createElement("span");
+            copiedSpan.className = "copied";
+            copiedSpan.style.marginLeft="6px";
+            copiedSpan.style.display = "none";
+            copiedSpan.textContent = `✅ 已复制【${cat}】的兑换码！`;
+
+            copyBtn.onclick = ()=>{
+                navigator.clipboard.writeText(codes.join("\n")).then(()=>{
+                    copiedSpan.style.display="inline";
+                    // setTimeout(()=>{copiedSpan.style.display="none";},2500);
+                });
+            };
+
+            header.appendChild(copyBtn);
+            header.appendChild(copiedSpan);
+            card.appendChild(header);
+
+            const ta = document.createElement("textarea");
+            ta.className = "codes";
+            ta.readOnly = true;
+            ta.value = codes.join("\n");
+            card.appendChild(ta);
+            out.appendChild(card);
+        });
+    }
+
+    function copyAll(){
+        const out = document.getElementById("output");
+        const textareas = out.querySelectorAll("textarea.codes");
+        const all = Array.from(textareas).map(t=>t.value).filter(Boolean).join("\n");
+        if(!all){ alert("没有可复制的兑换码"); return; }
+        navigator.clipboard.writeText(all).then(()=>alert("已复制所有兑换码"));
+    }
+</script>
+</body>
+</html>
