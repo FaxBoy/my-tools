@@ -2,36 +2,46 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8" />
-    <title>📱 【百动网】短信兑换码提取</title>
+    <title>📱 百动网 & 动力跃博 短信兑换码提取</title>
     <style>
         body{font-family:"Microsoft YaHei",Arial,Helvetica,sans-serif;margin:24px;background:#fafafb;color:#222}
         h1{font-size:20px;margin-bottom:10px}
-        textarea#smsInput{width:100%;height:180px;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;resize:vertical}
+        textarea#smsInput{width:100%;height:200px;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;resize:vertical}
         button{padding:8px 12px;margin-right:8px;border:none;border-radius:6px;background:#007bff;color:#fff;cursor:pointer}
         button:hover{opacity:0.92}
         .green{background:#28a745}
         .gray{background:#6c757d}
+        .providerTitle{font-size:20px;font-weight:700;margin-top:28px;margin-bottom:6px;color:#0b3d91;display:flex;align-items:center;gap:12px}
+        .providerPoints{font-size:16px;font-weight:600;color:#c0392b}
         .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-top:16px}
         .catHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
         .catTitle{font-weight:600;color:#0366d6}
         textarea.codes{width:100%;min-height:80px;padding:8px;font-family:monospace;font-size:13px;white-space:pre-wrap;resize:vertical}
-        .invalid{color:#b02a37;background:#fff0f0;padding:8px;border-radius:6px;margin-top:12px}
+        .invalid{display:none;color:#b02a37;background:#fff0f0;padding:8px;border-radius:6px;margin-top:12px;white-space:pre-wrap}
         .small{font-size:13px;color:#666}
         .count{font-weight:600;margin-left:8px;color:#333}
         .btn-copy{padding:6px 10px;border-radius:6px;background:#20b2aa;color:white;border:none;cursor:pointer;margin-left:8px}
-        .points{font-weight:bold;color:#e67e22;margin-left:10px;}
-        .total{font-size:18px;font-weight:bold;margin-top:10px;color:#c0392b}
+        .points{font-weight:bold;color:#e67e22;margin-left:10px;white-space:nowrap}
+        .total{font-size:18px;font-weight:bold;margin:18px 0 6px;color:#c0392b}
+        .subTotal{font-size:14px;color:#444;margin-bottom:14px}
         #summary{margin-bottom:20px}
         .info{background:#e3f2fd;padding:10px;border-radius:6px;margin-bottom:16px;font-size:14px}
+        #output{display:flex;flex-direction:column;gap:24px}
+        section.providerSection{flex:1;min-width:280px}
+        @media(min-width:960px){
+            #output{flex-direction:row;align-items:flex-start}
+            section.providerSection{max-width:50%}
+        }
     </style>
 </head>
 <body>
-<h1>📱 【百动网】短信兑换码提取</h1>
+<h1>📱 百动网 & 动力跃博 短信兑换码提取</h1>
+
 <div class="info">
-    <strong>支持格式：</strong><br>
-    • 乐刻运动N3、N4、N5、N7、N10 - 提取10位兑换码<br>
-    • 超级猩猩 - 提取16位兑换码<br>
-    • 支持多条短信一次性处理
+    <strong>输入说明：</strong><br>
+    • 支持同时粘贴百动网、动力跃博的多条短信内容<br>
+    • 自动按服务商分类整理兑换码，并统计积分/价值<br>
+    • 支持的短信类型会持续更新，遇到未识别格式请反馈
 </div>
 
 <textarea id="smsInput" placeholder="把短信整段粘贴到这里（支持多条短信一次性粘贴）..."></textarea>
@@ -43,6 +53,7 @@
 <!-- 汇总区域 -->
 <div id="summary">
     <div id="total" class="total"></div>
+    <div id="subTotals" class="subTotal"></div>
     <div id="invalids" class="invalid"></div>
 </div>
 
@@ -57,11 +68,139 @@
         return t;
     }
 
+    function extractBaidong(seg, idx, grouped, invalids, providerTotals){
+        const provider = "baidong";
+        const label = "百动网";
+        const lekePointsMap = { N3:159, N4:179, N5:199, N7:239, N10:299 };
+
+        const segCleanTail = seg.replace(/【[^】]*】/g, "");
+        const codeSectionMatch = segCleanTail.match(/兑换码[:：]([\s\S]*?)(?:。|$)/);
+        const codeSection = codeSectionMatch ? codeSectionMatch[1] : "";
+        if(!codeSection.trim()) return;
+
+        const rawCodes = codeSection.split(/[,，\n\r;；\s]+/).map(x=>x.trim()).filter(Boolean);
+
+        if(/超级猩猩/.test(seg)){
+            const priceMatch = seg.match(/健身操课\s*([0-9]{1,4})\s*元/);
+            const price = priceMatch ? parseInt(priceMatch[1]) : 0;
+            const cat = price ? `百动网｜超级猩猩 ${price}元课程` : "百动网｜超级猩猩 未知课程";
+            if(!grouped[cat]) grouped[cat] = {provider,label, codes:[], count:0, pointsPer:price, points:0};
+            rawCodes.forEach(rc=>{
+                const c = cleanCodeRaw(rc);
+                if(c.length===16){
+                    grouped[cat].codes.push(c);
+                    grouped[cat].count++;
+                } else {
+                    invalids.push({code:rc,cleaned:c,reason:`长度应为16（实际 ${c.length}）`,segment:idx+1,category:cat,provider:label});
+                }
+            });
+            grouped[cat].points = grouped[cat].pointsPer * grouped[cat].count;
+        }
+        else if(/乐刻运动/.test(seg)){
+            const levelMatch = seg.match(/乐刻运动-([^,，\n]+)/);
+            const catName = levelMatch ? levelMatch[1].trim() : "未知类别";
+            const cat = `百动网｜乐刻运动 - ${catName}`;
+            const nMatch = catName.match(/N(\d+)/);
+            const nKey = nMatch ? "N"+nMatch[1] : null;
+            const pointsPer = nKey && lekePointsMap[nKey] ? lekePointsMap[nKey] : 0;
+            if(!grouped[cat]) grouped[cat] = {provider,label, codes:[], count:0, pointsPer, points:0};
+            rawCodes.forEach(rc=>{
+                const c = cleanCodeRaw(rc);
+                if(c.length===10){
+                    grouped[cat].codes.push(c);
+                    grouped[cat].count++;
+                } else {
+                    invalids.push({code:rc,cleaned:c,reason:`长度应为10（实际 ${c.length}）`,segment:idx+1,category:cat,provider:label});
+                }
+            });
+            grouped[cat].points = grouped[cat].pointsPer * grouped[cat].count;
+        } else {
+            rawCodes.forEach(rc=>{
+                const c = cleanCodeRaw(rc);
+                invalids.push({code:rc,cleaned:c,reason:`未识别服务`,segment:idx+1,category:"百动网｜未知",provider:label});
+            });
+        }
+
+        Object.keys(grouped).forEach(cat=>{
+            if(grouped[cat].provider===provider){
+                providerTotals[provider] += grouped[cat].points || 0;
+            }
+        });
+    }
+
+    function extractDongli(seg, idx, grouped, invalids, providerTotals){
+        const provider = "dongli";
+        const label = "动力跃博";
+
+        const codeIndex = seg.indexOf('验证码');
+        if(codeIndex === -1) return;
+
+        let codeSection = "";
+        const bracketMatch = seg.match(/验证码\[([^\]]+)\]/);
+        if(bracketMatch) {
+            codeSection = bracketMatch[1];
+        } else {
+            const afterCode = seg.substring(codeIndex + 3);
+            const endMatch = afterCode.search(/(?:。|兑换方式|产品详情|有\s*效\s*期)/);
+            const endIndex = endMatch !== -1 ? endMatch : afterCode.length;
+            codeSection = afterCode.substring(0, endIndex);
+        }
+
+        if(!codeSection.trim()) return;
+
+        const rawCodes = codeSection.split(/[,，、\n\r;；\s]+/).map(x=>x.trim()).filter(Boolean);
+
+        if(/乐刻/.test(seg)){
+            const isPremium = /精品馆可用/.test(seg);
+            const productType = isPremium ? "（月）运动畅享（精品馆可用）" : "（月）运动畅享";
+            const pointsPer = isPremium ? 299 : 239;
+            const cat = `动力跃博｜乐刻运动${productType}`;
+            if(!grouped[cat]) grouped[cat] = {provider,label, codes:[], count:0, pointsPer, points:0};
+            rawCodes.forEach(rc=>{
+                const c = cleanCodeRaw(rc);
+                if(c.length===10){
+                    grouped[cat].codes.push(c);
+                    grouped[cat].count++;
+                } else {
+                    invalids.push({code:rc,cleaned:c,reason:`长度应为10（实际 ${c.length}）`,segment:idx+1,category:cat,provider:label});
+                }
+            });
+            grouped[cat].points = grouped[cat].pointsPer * grouped[cat].count;
+        }
+        else if(/超级猩猩/.test(seg)){
+            const pointsPer = 89;
+            const cat = `动力跃博｜超级猩猩-全国通用`;
+            if(!grouped[cat]) grouped[cat] = {provider,label, codes:[], count:0, pointsPer, points:0};
+            rawCodes.forEach(rc=>{
+                const c = cleanCodeRaw(rc);
+                if(c.length===16){
+                    grouped[cat].codes.push(c);
+                    grouped[cat].count++;
+                } else {
+                    invalids.push({code:rc,cleaned:c,reason:`长度应为16（实际 ${c.length}）`,segment:idx+1,category:cat,provider:label});
+                }
+            });
+            grouped[cat].points = grouped[cat].pointsPer * grouped[cat].count;
+        } else {
+            rawCodes.forEach(rc=>{
+                const c = cleanCodeRaw(rc);
+                invalids.push({code:rc,cleaned:c,reason:`未识别服务`,segment:idx+1,category:"动力跃博｜未知",provider:label});
+            });
+        }
+
+        Object.keys(grouped).forEach(cat=>{
+            if(grouped[cat].provider===provider){
+                providerTotals[provider] += grouped[cat].points || 0;
+            }
+        });
+    }
+
     function extractCodes(){
         const raw = document.getElementById("smsInput").value || "";
         const out = document.getElementById("output");
         out.innerHTML = "";
         document.getElementById("total").innerHTML = "";
+        document.getElementById("subTotals").innerHTML = "";
         document.getElementById("invalids").innerHTML = "";
 
         if(!raw.trim()){
@@ -69,86 +208,86 @@
             return;
         }
 
-        const segments = raw.split(/(?=【百动】)/g).map(s=>s.trim()).filter(Boolean);
+        const segments = raw.split(/(?=【(?:百动|百动网|动力跃博)】)/g).map(s=>s.trim()).filter(Boolean);
         const grouped = {};
         const invalids = [];
-        const lekePointsMap = { N3:159, N4:179, N5:199, N7:239, N10:299 };
+        const providerTotals = {baidong:0, dongli:0};
 
         segments.forEach((seg, idx) => {
-            const segCleanTail = seg.replace(/【[^】]*】/g, "");
-            const codeSectionMatch = segCleanTail.match(/兑换码[:：]([\s\S]*?)(?:。|$)/);
-            const codeSection = codeSectionMatch ? codeSectionMatch[1] : "";
-            if(!codeSection.trim()) return;
-
-            const rawCodes = codeSection.split(/[,，\n\r;；\s]+/).map(x=>x.trim()).filter(Boolean);
-
-            if(/超级猩猩/.test(seg)){
-                const priceMatch = seg.match(/健身操课\s*([0-9]{1,4})\s*元/);
-                const price = priceMatch ? parseInt(priceMatch[1]) : 0;
-                const cat = price ? `超级猩猩 ${price}元课程` : "超级猩猩 未知课程";
-                if(!grouped[cat]) grouped[cat] = {codes:[], pointsPer:price, count:0, points:0};
-                rawCodes.forEach(rc=>{
-                    const c = cleanCodeRaw(rc);
-                    if(c.length===16){
-                        grouped[cat].codes.push(c);
-                        grouped[cat].count++;
-                    } else {
-                        invalids.push({code:rc,cleaned:c,reason:`长度应为16（实际 ${c.length}）`,segment:idx+1,category:cat});
-                    }
-                });
-                grouped[cat].points = grouped[cat].pointsPer * grouped[cat].count;
-            }
-            else if(/乐刻运动/.test(seg)){
-                const levelMatch = seg.match(/乐刻运动-([^,，\n]+)/);
-                const cat = levelMatch ? `乐刻运动 - ${levelMatch[1].trim()}` : "乐刻运动 - 未知类别";
-                const nMatch = cat.match(/N(\d+)/);
-                const nKey = nMatch ? "N"+nMatch[1] : null;
-                const pointsPer = nKey && lekePointsMap[nKey] ? lekePointsMap[nKey] : 0;
-                if(!grouped[cat]) grouped[cat] = {codes:[], pointsPer, count:0, points:0};
-                rawCodes.forEach(rc=>{
-                    const c = cleanCodeRaw(rc);
-                    if(c.length===10){
-                        grouped[cat].codes.push(c);
-                        grouped[cat].count++;
-                    } else {
-                        invalids.push({code:rc,cleaned:c,reason:`长度应为10（实际 ${c.length}）`,segment:idx+1,category:cat});
-                    }
-                });
-                grouped[cat].points = grouped[cat].pointsPer * grouped[cat].count;
+            if(/^【(?:百动|百动网)】/.test(seg)){
+                extractBaidong(seg, idx, grouped, invalids, providerTotals);
+            } else if(/^【动力跃博】/.test(seg)){
+                extractDongli(seg, idx, grouped, invalids, providerTotals);
             } else {
-                rawCodes.forEach(rc=>{
-                    const c = cleanCodeRaw(rc);
-                    invalids.push({code:rc,cleaned:c,reason:`未识别服务`,segment:idx+1,category:"未知"});
-                });
+                // 未知来源，尝试判断
+                if(/百动/.test(seg)){
+                    extractBaidong(`【百动】${seg}`, idx, grouped, invalids, providerTotals);
+                } else if(/动力跃博/.test(seg)){
+                    extractDongli(`【动力跃博】${seg}`, idx, grouped, invalids, providerTotals);
+                }
             }
         });
 
-        let totalPoints = 0;
-        Object.keys(grouped).forEach(cat=>{
-            totalPoints += grouped[cat].points;
+        // 重新累计 providerTotals（防止重复累加）
+        providerTotals.baidong = 0;
+        providerTotals.dongli = 0;
+        Object.values(grouped).forEach(item=>{
+            item.points = item.pointsPer * item.count;
+            if(item.provider === "baidong") providerTotals.baidong += item.points;
+            if(item.provider === "dongli") providerTotals.dongli += item.points;
         });
 
-        // 上方显示总积分
+        const totalPoints = providerTotals.baidong + providerTotals.dongli;
         document.getElementById("total").textContent = `总消耗积分：${totalPoints}`;
+        const subTexts = [];
+        if(providerTotals.baidong) subTexts.push(`百动网：${providerTotals.baidong}`);
+        if(providerTotals.dongli) subTexts.push(`动力跃博：${providerTotals.dongli}`);
+        document.getElementById("subTotals").textContent = subTexts.length ? `分渠道：${subTexts.join(" ｜ ")}` : "";
 
-        // 上方显示无效兑换码
+        const invalidBox = document.getElementById("invalids");
         if(invalids.length>0){
-            document.getElementById("invalids").innerHTML = `<strong>被过滤/无效兑换码（共 ${invalids.length} 个）</strong>
-        <pre>${invalids.map(it=>`段${it.segment} | 类别:${it.category} | 原码:"${it.code}" | 清洗后:"${it.cleaned}" | ${it.reason}`).join("\n")}</pre>`;
+            invalidBox.style.display = "block";
+            invalidBox.innerHTML = `<strong>被过滤/无效兑换码（共 ${invalids.length} 个）</strong>\n${invalids.map(it=>`段${it.segment} | 来源:${it.provider} | 类别:${it.category} | 原码:"${it.code}" | 清洗后:"${it.cleaned}" | ${it.reason}`).join("\n")}`;
+        } else {
+            invalidBox.style.display = "none";
+            invalidBox.innerHTML = "";
         }
 
-        // 生成每类兑换码卡片
-        Object.keys(grouped).forEach(cat=>{
-            const {codes, pointsPer, count, points} = grouped[cat];
+        const providerSections = {};
+        const providerOrder = [
+            {key:"baidong", label:"百动网", total:providerTotals.baidong},
+            {key:"dongli", label:"动力跃博", total:providerTotals.dongli}
+        ];
+
+        providerOrder.forEach(info=>{
+            const hasCodes = Object.values(grouped).some(item=>item.provider===info.key && item.codes.length>0);
+            if(!hasCodes) return;
+            const section = document.createElement("section");
+            section.className = "providerSection";
+            section.dataset.provider = info.key;
+            const title = document.createElement("div");
+            title.className = "providerTitle";
+            title.innerHTML = `<span>${info.label}</span><span class="providerPoints">渠道积分：${info.total}</span>`;
+            section.appendChild(title);
+            document.getElementById("output").appendChild(section);
+            providerSections[info.key] = section;
+        });
+
+        Object.keys(grouped).sort().forEach(cat=>{
+            const {provider,label, codes, count, pointsPer, points} = grouped[cat];
+            if(codes.length===0) return;
+            const providerSection = providerSections[provider];
+            if(!providerSection) return;
+
             const card = document.createElement("div");
             card.className = "card";
 
             const header = document.createElement("div");
             header.className = "catHeader";
             header.innerHTML = `
-        <div class="catTitle">${cat}
+        <div class="catTitle">${cat.replace(/^.*?｜/, '')}
             <span class="count">(${count}个)</span>
-            <span class="points">积分消耗: ${pointsPer} × ${count} = ${points}</span>
+            <span class="points">${pointsPer} × ${count} = ${points}</span>
         </div>
         `;
             const copyBtn = document.createElement("button");
@@ -159,12 +298,11 @@
             copiedSpan.className = "copied";
             copiedSpan.style.marginLeft="6px";
             copiedSpan.style.display = "none";
-            copiedSpan.textContent = `✅ 已复制【${cat}】的兑换码！`;
+            copiedSpan.textContent = `✅ 已复制【${cat.replace(/^.*?｜/, '')}】的兑换码！`;
 
             copyBtn.onclick = ()=>{
                 navigator.clipboard.writeText(codes.join("\n")).then(()=>{
                     copiedSpan.style.display="inline";
-                    // setTimeout(()=>{copiedSpan.style.display="none";},2500);
                 });
             };
 
@@ -177,16 +315,12 @@
             ta.readOnly = true;
             ta.value = codes.join("\n");
             card.appendChild(ta);
-            out.appendChild(card);
+            providerSection.appendChild(card);
         });
-    }
 
-    function clearAll(){
-        document.getElementById("smsInput").value = "";
-        document.getElementById("output").innerHTML = "";
-        document.getElementById("total").innerHTML = "";
-        document.getElementById("invalids").innerHTML = "";
-        document.getElementById("smsInput").focus();
+        if(!out.innerHTML){
+            out.innerHTML = '<div class="card"><p class="small">没有识别到有效的兑换码。</p></div>';
+        }
     }
 
     function copyAll(){
@@ -196,6 +330,16 @@
         if(!all){ alert("没有可复制的兑换码"); return; }
         navigator.clipboard.writeText(all).then(()=>alert("已复制所有兑换码"));
     }
+
+    function clearAll(){
+        document.getElementById("smsInput").value = "";
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("total").innerHTML = "";
+        document.getElementById("subTotals").innerHTML = "";
+        document.getElementById("invalids").innerHTML = "";
+        document.getElementById("smsInput").focus();
+    }
 </script>
 </body>
 </html>
+
