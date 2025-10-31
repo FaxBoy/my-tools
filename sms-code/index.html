@@ -55,6 +55,7 @@
     <div id="total" class="total"></div>
     <div id="subTotals" class="subTotal"></div>
     <div id="invalids" class="invalid"></div>
+    <div id="duplicates" class="invalid"></div>
 </div>
 
 <div id="output"></div>
@@ -68,7 +69,17 @@
         return t;
     }
 
-    function extractBaidong(seg, idx, grouped, invalids, providerTotals){
+    function isDuplicate(code, info, globalCodes, duplicates){
+        if(globalCodes.has(code)){
+            const first = globalCodes.get(code);
+            duplicates.push({code, first, duplicate: info});
+            return true;
+        }
+        globalCodes.set(code, info);
+        return false;
+    }
+
+    function extractBaidong(seg, idx, grouped, invalids, providerTotals, globalCodes, duplicates){
         const provider = "baidong";
         const label = "百动网";
         const lekePointsMap = { N3:159, N4:179, N5:199, N7:239, N10:299 };
@@ -88,6 +99,8 @@
             rawCodes.forEach(rc=>{
                 const c = cleanCodeRaw(rc);
                 if(c.length===16){
+                    const meta = {provider, label, category:cat, segment:idx+1};
+                    if(isDuplicate(c, meta, globalCodes, duplicates)) return;
                     grouped[cat].codes.push(c);
                     grouped[cat].count++;
                 } else {
@@ -107,6 +120,8 @@
             rawCodes.forEach(rc=>{
                 const c = cleanCodeRaw(rc);
                 if(c.length===10){
+                    const meta = {provider, label, category:cat, segment:idx+1};
+                    if(isDuplicate(c, meta, globalCodes, duplicates)) return;
                     grouped[cat].codes.push(c);
                     grouped[cat].count++;
                 } else {
@@ -128,7 +143,7 @@
         });
     }
 
-    function extractDongli(seg, idx, grouped, invalids, providerTotals){
+    function extractDongli(seg, idx, grouped, invalids, providerTotals, globalCodes, duplicates){
         const provider = "dongli";
         const label = "动力跃博";
 
@@ -159,6 +174,8 @@
             rawCodes.forEach(rc=>{
                 const c = cleanCodeRaw(rc);
                 if(c.length===10){
+                    const meta = {provider, label, category:cat, segment:idx+1};
+                    if(isDuplicate(c, meta, globalCodes, duplicates)) return;
                     grouped[cat].codes.push(c);
                     grouped[cat].count++;
                 } else {
@@ -174,6 +191,8 @@
             rawCodes.forEach(rc=>{
                 const c = cleanCodeRaw(rc);
                 if(c.length===16){
+                    const meta = {provider, label, category:cat, segment:idx+1};
+                    if(isDuplicate(c, meta, globalCodes, duplicates)) return;
                     grouped[cat].codes.push(c);
                     grouped[cat].count++;
                 } else {
@@ -201,7 +220,12 @@
         out.innerHTML = "";
         document.getElementById("total").innerHTML = "";
         document.getElementById("subTotals").innerHTML = "";
-        document.getElementById("invalids").innerHTML = "";
+        const invalidBox = document.getElementById("invalids");
+        invalidBox.style.display = "none";
+        invalidBox.innerHTML = "";
+        const duplicateBox = document.getElementById("duplicates");
+        duplicateBox.style.display = "none";
+        duplicateBox.innerHTML = "";
 
         if(!raw.trim()){
             out.innerHTML = '<div class="card"><p class="small">请先粘贴短信内容，然后点击「提取兑换码」。</p></div>';
@@ -211,19 +235,21 @@
         const segments = raw.split(/(?=【(?:百动|百动网|动力跃博)】)/g).map(s=>s.trim()).filter(Boolean);
         const grouped = {};
         const invalids = [];
+        const duplicates = [];
+        const globalCodes = new Map();
         const providerTotals = {baidong:0, dongli:0};
 
         segments.forEach((seg, idx) => {
             if(/^【(?:百动|百动网)】/.test(seg)){
-                extractBaidong(seg, idx, grouped, invalids, providerTotals);
+                extractBaidong(seg, idx, grouped, invalids, providerTotals, globalCodes, duplicates);
             } else if(/^【动力跃博】/.test(seg)){
-                extractDongli(seg, idx, grouped, invalids, providerTotals);
+                extractDongli(seg, idx, grouped, invalids, providerTotals, globalCodes, duplicates);
             } else {
                 // 未知来源，尝试判断
                 if(/百动/.test(seg)){
-                    extractBaidong(`【百动】${seg}`, idx, grouped, invalids, providerTotals);
+                    extractBaidong(`【百动】${seg}`, idx, grouped, invalids, providerTotals, globalCodes, duplicates);
                 } else if(/动力跃博/.test(seg)){
-                    extractDongli(`【动力跃博】${seg}`, idx, grouped, invalids, providerTotals);
+                    extractDongli(`【动力跃博】${seg}`, idx, grouped, invalids, providerTotals, globalCodes, duplicates);
                 }
             }
         });
@@ -244,13 +270,20 @@
         if(providerTotals.dongli) subTexts.push(`动力跃博：${providerTotals.dongli}`);
         document.getElementById("subTotals").textContent = subTexts.length ? `分渠道：${subTexts.join(" ｜ ")}` : "";
 
-        const invalidBox = document.getElementById("invalids");
         if(invalids.length>0){
             invalidBox.style.display = "block";
             invalidBox.innerHTML = `<strong>被过滤/无效兑换码（共 ${invalids.length} 个）</strong>\n${invalids.map(it=>`段${it.segment} | 来源:${it.provider} | 类别:${it.category} | 原码:"${it.code}" | 清洗后:"${it.cleaned}" | ${it.reason}`).join("\n")}`;
         } else {
             invalidBox.style.display = "none";
             invalidBox.innerHTML = "";
+        }
+
+        if(duplicates.length>0){
+            duplicateBox.style.display = "block";
+            duplicateBox.innerHTML = `<strong>检测到重复兑换码（共 ${duplicates.length} 个）</strong>\n${duplicates.map(it=>`兑换码:${it.code} | 首次出现:段${it.first.segment} → ${it.first.category} | 重复出现:段${it.duplicate.segment} → ${it.duplicate.category}`).join("\n")}`;
+        } else {
+            duplicateBox.style.display = "none";
+            duplicateBox.innerHTML = "";
         }
 
         const providerSections = {};
@@ -336,7 +369,12 @@
         document.getElementById("output").innerHTML = "";
         document.getElementById("total").innerHTML = "";
         document.getElementById("subTotals").innerHTML = "";
-        document.getElementById("invalids").innerHTML = "";
+        const invalidBox = document.getElementById("invalids");
+        invalidBox.style.display = "none";
+        invalidBox.innerHTML = "";
+        const duplicateBox = document.getElementById("duplicates");
+        duplicateBox.style.display = "none";
+        duplicateBox.innerHTML = "";
         document.getElementById("smsInput").focus();
     }
 </script>
