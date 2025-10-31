@@ -11,7 +11,7 @@
         button:hover{opacity:0.92}
         .green{background:#28a745}
         .gray{background:#6c757d}
-        .providerTitle{font-size:20px;font-weight:700;margin-top:28px;margin-bottom:6px;color:#0b3d91;display:flex;align-items:center;gap:12px}
+        .providerTitle{font-size:20px;font-weight:700;margin-top:12px;margin-bottom:6px;color:#0b3d91;display:flex;align-items:center;gap:12px}
         .providerPoints{font-size:16px;font-weight:600;color:#c0392b}
         .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-top:16px}
         .catHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -24,7 +24,7 @@
         .points{font-weight:bold;color:#e67e22;margin-left:10px;white-space:nowrap}
         .total{font-size:18px;font-weight:bold;margin:18px 0 6px;color:#c0392b}
         .subTotal{font-size:14px;color:#444;margin-bottom:14px}
-        #summary{margin-bottom:20px}
+        #summary{margin:16px 0 12px;background:#eef5ff;border:1px solid #c5d9ff;padding:12px 16px;border-radius:10px;box-shadow:0 1px 4px rgba(15,64,153,0.05);display:none}
         .info{background:#e3f2fd;padding:10px;border-radius:6px;margin-bottom:16px;font-size:14px}
         #output{display:flex;flex-direction:column;gap:24px}
         section.providerSection{flex:1;min-width:280px}
@@ -223,6 +223,8 @@
         out.innerHTML = "";
         document.getElementById("total").innerHTML = "";
         document.getElementById("subTotals").innerHTML = "";
+        const summaryBox = document.getElementById("summary");
+        summaryBox.style.display = "none";
         const invalidBox = document.getElementById("invalids");
         invalidBox.style.display = "none";
         invalidBox.innerHTML = "";
@@ -272,6 +274,9 @@
         if(providerTotals.baidong) subTexts.push(`百动网：${providerTotals.baidong}`);
         if(providerTotals.dongli) subTexts.push(`动力跃博：${providerTotals.dongli}`);
         document.getElementById("subTotals").textContent = subTexts.length ? `分渠道：${subTexts.join(" ｜ ")}` : "";
+        if(totalPoints || subTexts.length || invalids.length || duplicates.length){
+            summaryBox.style.display = "block";
+        }
 
         if(invalids.length>0){
             invalidBox.style.display = "block";
@@ -374,6 +379,7 @@
         document.getElementById("output").innerHTML = "";
         document.getElementById("total").innerHTML = "";
         document.getElementById("subTotals").innerHTML = "";
+        document.getElementById("summary").style.display = "none";
         const invalidBox = document.getElementById("invalids");
         invalidBox.style.display = "none";
         invalidBox.innerHTML = "";
