@@ -11,6 +11,7 @@
         button{padding:8px 12px;margin-right:8px;border:none;border-radius:6px;background:#007bff;color:#fff;cursor:pointer}
         button:hover{opacity:0.92}
         .green{background:#28a745}
+        .muted{background:#6c757d}
         .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-top:16px}
         .catHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
         .catTitle{font-weight:600;color:#0366d6}
@@ -40,6 +41,7 @@
 <br/>
 <button onclick="extractCodes()">提取兑换码</button>
 <button class="green" onclick="copyAll()">复制所有兑换码</button>
+<button class="muted" onclick="clearAll()">清空</button>
 
 <!-- 汇总区域 -->
 <div id="summary">
@@ -89,18 +91,15 @@
             } else {
                 // 没有方括号，从"验证码"开始提取到句号或"兑换方式"或"产品详情"
                 const afterCode = seg.substring(codeIndex + 3); // 跳过"验证码"3个字符
-                const endIndex = Math.min(
-                    afterCode.indexOf('。') !== -1 ? afterCode.indexOf('。') : afterCode.length,
-                    afterCode.indexOf('兑换方式') !== -1 ? afterCode.indexOf('兑换方式') : afterCode.length,
-                    afterCode.indexOf('产品详情') !== -1 ? afterCode.indexOf('产品详情') : afterCode.length
-                );
+                const endMatch = afterCode.search(/(?:。|兑换方式|产品详情|有\s*效\s*期)/);
+                const endIndex = endMatch !== -1 ? endMatch : afterCode.length;
                 codeSection = afterCode.substring(0, endIndex);
             }
             
             if(!codeSection.trim()) return;
             
             // 分割验证码
-            const rawCodes = codeSection.split(/[,，\n\r;；\s]+/).map(x=>x.trim()).filter(Boolean);
+            const rawCodes = codeSection.split(/[,，、\n\r;；\s]+/).map(x=>x.trim()).filter(Boolean);
 
             // 判断是乐刻还是超级猩猩
             if(/乐刻/.test(seg)){
@@ -212,6 +211,14 @@
         const all = Array.from(textareas).map(t=>t.value).filter(Boolean).join("\n");
         if(!all){ alert("没有可复制的兑换码"); return; }
         navigator.clipboard.writeText(all).then(()=>alert("已复制所有兑换码"));
+    }
+
+    function clearAll(){
+        document.getElementById("smsInput").value = "";
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("total").innerHTML = "";
+        document.getElementById("invalids").innerHTML = "";
+        document.getElementById("smsInput").focus();
     }
 </script>
 </body>
