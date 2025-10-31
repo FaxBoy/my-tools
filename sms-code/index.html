@@ -28,6 +28,9 @@
         .info{background:#e3f2fd;padding:10px;border-radius:6px;margin-bottom:16px;font-size:14px}
         #output{display:flex;flex-direction:column;gap:24px}
         section.providerSection{flex:1;min-width:280px}
+        .copyActions{display:flex;align-items:center;gap:4px}
+        .copied{font-size:13px;font-weight:600;color:#c0392b;visibility:hidden;display:inline-block}
+        .copied.visible{visibility:visible}
         @media(min-width:960px){
             #output{flex-direction:row;align-items:flex-start}
             section.providerSection{max-width:50%}
@@ -323,24 +326,26 @@
             <span class="points">${pointsPer} × ${count} = ${points}</span>
         </div>
         `;
+            const copiedSpan = document.createElement("span");
+            copiedSpan.className = "copied";
+            copiedSpan.textContent = "✅ 已复制";
+
             const copyBtn = document.createElement("button");
             copyBtn.className = "btn-copy";
             copyBtn.textContent = "复制本类";
 
-            const copiedSpan = document.createElement("span");
-            copiedSpan.className = "copied";
-            copiedSpan.style.marginLeft="6px";
-            copiedSpan.style.display = "none";
-            copiedSpan.textContent = `✅ 已复制【${cat.replace(/^.*?｜/, '')}】的兑换码！`;
+            const actionsWrap = document.createElement("div");
+            actionsWrap.className = "copyActions";
+            actionsWrap.appendChild(copiedSpan);
+            actionsWrap.appendChild(copyBtn);
 
             copyBtn.onclick = ()=>{
                 navigator.clipboard.writeText(codes.join("\n")).then(()=>{
-                    copiedSpan.style.display="inline";
+                    copiedSpan.classList.add("visible");
                 });
             };
 
-            header.appendChild(copyBtn);
-            header.appendChild(copiedSpan);
+            header.appendChild(actionsWrap);
             card.appendChild(header);
 
             const ta = document.createElement("textarea");
