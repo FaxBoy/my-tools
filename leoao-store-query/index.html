@@ -24,7 +24,7 @@
       padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
     }
     .page-inner { max-width: 480px; margin: 0 auto; }
-    .hero { text-align: center; margin-bottom: 22px; padding-top: 8px; }
+    .hero { text-align: center; margin-bottom: 0; padding-top: 12px; }
     .hero-title {
       margin: 0;
       font-size: 26px;
@@ -38,10 +38,19 @@
     }
     @media (min-width: 480px) { .hero-title { font-size: 28px; } }
 
+    .hero-subtitle {
+      margin: 10px 10px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #a8a29e;
+      line-height: 1.55;
+    }
+
     .search-card {
       display: flex;
       gap: 10px;
       align-items: stretch;
+      margin-bottom: 14px;
       padding: 14px;
       background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(10px);
@@ -75,14 +84,6 @@
     }
     .search-btn:disabled { opacity: 0.75; cursor: not-allowed; }
     .search-btn:not(:disabled):hover { filter: brightness(1.06); }
-
-    .tips {
-      margin: 12px 4px 18px;
-      font-size: 12px;
-      color: #a8a29e;
-      line-height: 1.5;
-    }
-    .tips strong { color: #78716c; font-weight: 600; }
 
     .toast {
       text-align: center;
@@ -140,16 +141,6 @@
       box-shadow: 0 4px 14px rgba(255, 85, 32, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
 
-    .footnote {
-      margin: 24px 8px 0;
-      text-align: center;
-      font-size: 11px;
-      color: #cec6be;
-      line-height: 1.55;
-    }
-
-    code { font-size: 0.9em; background: rgba(0, 0, 0, 0.05); padding: 0 4px; border-radius: 4px; }
-
     .fallback-json {
       margin: -6px 4px 12px;
       font-size: 12px;
@@ -180,18 +171,15 @@
 </head>
 <body>
   <div class="page-inner">
-    <nav style="text-align:center;margin-bottom:14px;">
-      <a href="../" style="color:#78716c;text-decoration:none;font-size:13px;">← 返回工具集</a>
-    </nav>
     <header class="hero">
       <h1 class="hero-title" id="elHeroTitle"></h1>
+      <p class="hero-subtitle">查询结果仅供参考，数据更新时间：2026年4月底</p>
     </header>
 
     <div class="search-card">
       <input id="keyword" class="keyword-input" type="search" maxlength="50" autocomplete="off" />
       <button type="button" class="search-btn" id="btnSearch"></button>
     </div>
-    <p class="tips" id="elTips"></p>
 
     <div id="stateSlot"></div>
     <p id="fallbackRow" class="fallback-json" hidden>
@@ -200,11 +188,8 @@
     </p>
     <div id="toastLoading" class="toast toast--loading" style="display: none;"></div>
     <div id="results" class="results" hidden></div>
-
-    <p class="footnote" id="elFootnote"></p>
   </div>
 
-  <!-- Default data file from PC export; override e.g. window.__DATA_JSON_URL__ = 'https://.../leoao-stores-public.json' -->
   <script>
     window.__DATA_JSON_URL__ = './leoao-stores-public.json';
   </script>
@@ -214,23 +199,17 @@
   var RESULT_CAP = 50;
 
   var T = {
-    docTitle: '\u95e8\u5e97\u7b49\u7ea7\u67e5\u8be2',
-    hero: '\u67e5\u627e\u95e8\u5e97\u7b49\u7ea7',
+    docTitle: '\u67e5\u8be2\u95e8\u5e97\u7b49\u7ea7',
+    hero: '\u67e5\u8be2\u95e8\u5e97\u7b49\u7ea7',
     phKeyword: '\u8f93\u5165\u5e97\u540d\u5173\u952e\u5b57',
     ariaKeyword: '\u95e8\u5e97\u540d\u79f0\u5173\u952e\u5b57',
     btnSearch: '\u67e5\u8be2',
-    tips:
-      '\u672c\u9875\u4ece\u540c\u76ee\u5f55 <code>leoao-stores-public.json</code> \u8bfb\u53d6\uff1b<strong>\u5e97\u540d</strong>\u6a21\u7cca\u5339\u914d\uff0c\u6700\u591a ' +
-      RESULT_CAP +
-      ' \u6761\u3002\u5728 PC \u7ba1\u7406\u7aef\u300c\u4e50\u523b\u95e8\u5e97\u300d\u5bfc\u51fa JSON \u540e\u66ff\u6362\u8be5\u6587\u4ef6\u5373\u53ef\u3002',
     loading: '\u6b63\u5728\u67e5\u8be2\u2026',
-    bootLoad: '\u6b63\u5728\u52a0\u8f7d\u6570\u636e\u2026',
-    foot:
-      '\u4fe1\u606f\u4ec5\u4f9b\u53c2\u8003\uff0c\u5982\u6709\u7591\u95ee\u8bf7\u54a8\u8be2\u5de5\u4f5c\u4eba\u5458\uff0c\u6570\u636e\u5f55\u5165\u65f6\u95f4\uff1a2026\u5e744\u6708\u5e95',
-    pickJsonBtn:
-      '\u4ece\u672c\u673a\u9009\u62e9 leoao-stores-public.json',
-    fileProtocolHint:
-      '\u52ff\u7528\u53cc\u51fb\u6253\u5f00 HTML\uff08file:\uff09\uff1b\u6d4f\u89c8\u5668\u7981\u6b62\u8bfb\u53d6\u540c\u76ee\u5f55 JSON\u3002\u8bf7\u7528 HTTPS \u8bbf\u95ee\u90e8\u7f72\u7ad9\u70b9\uff0c\u6216\u70b9\u4e0b\u65b9\u9009\u62e9\u5bfc\u51fa\u7684 JSON\u6587\u4ef6\u3002'
+    bootLoad: '\u6b63\u5728\u52a0\u8f7d\u2026',
+    pickJsonBtn: '\u9009\u62e9 JSON',
+    fileProtocolHint: '\u8bf7\u7528 HTTPS \u8bbf\u95ee\u6216\u9009\u62e9\u672c\u5730 JSON',
+    loadFail: '\u6570\u636e\u52a0\u8f7d\u5931\u8d25',
+    emptyData: '\u6682\u65e0\u53ef\u67e5\u6570\u636e'
   };
 
   document.title = T.docTitle;
@@ -239,8 +218,6 @@
   kw.placeholder = T.phKeyword;
   kw.setAttribute('aria-label', T.ariaKeyword);
   document.getElementById('btnSearch').textContent = T.btnSearch;
-  document.getElementById('elTips').innerHTML = T.tips;
-  document.getElementById('elFootnote').textContent = T.foot;
   document.getElementById('toastLoading').textContent = T.loading;
   document.getElementById('btnPickJson').textContent = T.pickJsonBtn;
 
@@ -296,8 +273,7 @@
     bootError = '';
     stateSlot.innerHTML = '';
     if (allStores.length === 0) {
-      stateSlot.innerHTML =
-        '<div class="toast toast--empty">\u6570\u636e\u4e3a\u7a7a\uff0c\u8bf7\u5728 PC \u300c\u4e50\u523b\u95e8\u5e97\u300d\u5bfc\u51fa JSON \u540e\u4e0e index.html \u540c\u76ee\u5f55\u90e8\u7f72\u3002</div>';
+      stateSlot.innerHTML = '<div class="toast toast--empty">' + escapeHtml(T.emptyData) + '</div>';
     }
   }
 
@@ -459,10 +435,7 @@
   }
 
   function hintFetchFailed(showPicker) {
-    bootError =
-      '\u65e0\u6cd5\u52a0\u8f7d ' +
-      resolveDataJsonHref() +
-      '\u3002\u8bf7\u786e\u8ba4\u5df2\u968f\u7ad9\u70b9\u4e00\u540c\u4e0a\u4f20\u8be5\u6587\u4ef6\uff1b\u82e5\u7528\u53cc\u51fb\u6253\u5f00 HTML\uff08file:\uff09\u8bf7\u6539\u7528 HTTPS \u6216\u4ece\u672c\u673a\u9009\u62e9 JSON\u3002';
+    bootError = T.loadFail;
     stateSlot.innerHTML = '<div class="toast toast--error">' + escapeHtml(bootError) + '</div>';
     if (showPicker) showFallbackPicker();
   }
