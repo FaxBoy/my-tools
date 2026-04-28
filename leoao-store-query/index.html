@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no" />
+  <title></title>
+  <style>
+    :root {
+      --leoao-orange: #ff5520;
+      --leoao-orange-deep: #e63e0a;
+      --leoao-orange-soft: #fff0e8;
+      --leoao-ink: #1a1a1a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(168deg, #fff5f0 0%, #fff8f3 28%, #fffcfa 62%, #fff 100%);
+      color: var(--leoao-ink);
+      padding: 20px 16px 32px;
+      padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+    }
+    .page-inner { max-width: 480px; margin: 0 auto; }
+    .hero { text-align: center; margin-bottom: 22px; padding-top: 8px; }
+    .hero-title {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      background: linear-gradient(115deg, #cc2d1a 0%, var(--leoao-orange) 48%, #ff8f4d 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    @media (min-width: 480px) { .hero-title { font-size: 28px; } }
+
+    .search-card {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 236, 226, 0.95);
+      box-shadow: 0 8px 28px rgba(255, 85, 32, 0.1), 0 2px 10px rgba(204, 45, 26, 0.05);
+    }
+    .keyword-input {
+      flex: 1;
+      border-radius: 12px;
+      min-height: 46px;
+      padding: 0 14px;
+      font-size: 16px;
+      border: none;
+      box-shadow: 0 0 0 1px #f0e0d8 inset;
+      background: #fffefb;
+      outline: none;
+    }
+    .keyword-input:focus { box-shadow: 0 0 0 2px rgba(255, 85, 32, 0.42); }
+    .search-btn {
+      flex-shrink: 0;
+      min-width: 88px;
+      height: 46px;
+      font-weight: 700;
+      font-size: 15px;
+      color: #fff;
+      cursor: pointer;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(145deg, var(--leoao-orange-deep) 0%, var(--leoao-orange) 52%, #ff7a3d 100%);
+    }
+    .search-btn:disabled { opacity: 0.75; cursor: not-allowed; }
+    .search-btn:not(:disabled):hover { filter: brightness(1.06); }
+
+    .tips {
+      margin: 12px 4px 18px;
+      font-size: 12px;
+      color: #a8a29e;
+      line-height: 1.5;
+    }
+    .tips strong { color: #78716c; font-weight: 600; }
+
+    .toast {
+      text-align: center;
+      padding: 14px 12px;
+      font-size: 14px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .toast--empty { color: #78716c; background: rgba(255, 255, 255, 0.75); }
+    .toast--error { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; }
+    .toast--loading { color: var(--leoao-orange-deep); background: var(--leoao-orange-soft); }
+
+    .results { display: flex; flex-direction: column; gap: 14px; }
+    .store-card {
+      padding: 18px 18px 16px;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 230, 218, 0.85);
+      box-shadow: 0 10px 34px rgba(255, 85, 32, 0.08), 0 4px 12px rgba(204, 45, 26, 0.04);
+    }
+    .store-name {
+      margin: 0 0 14px;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.35;
+      color: var(--leoao-ink);
+    }
+    .meta { margin: 0; }
+    .meta-row {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 10px 12px;
+      align-items: start;
+      padding: 10px 0;
+      border-top: 1px solid #f4f0eb;
+      font-size: 14px;
+    }
+    .meta-row:first-of-type { border-top: none; padding-top: 0; }
+    .meta-row dt { margin: 0; font-weight: 500; color: #a89f97; }
+    .meta-row dd { margin: 0; color: #3d3d3d; line-height: 1.55; word-break: break-word; }
+    .meta-row--address dd { color: #6b6560; font-size: 13px; }
+
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 4.5rem;
+      padding: 7px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      background: linear-gradient(135deg, #ee3a1f 0%, var(--leoao-orange) 42%, #ff8f4d 100%);
+      border-radius: 999px;
+      box-shadow: 0 4px 14px rgba(255, 85, 32, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .footnote {
+      margin: 24px 8px 0;
+      text-align: center;
+      font-size: 11px;
+      color: #cec6be;
+      line-height: 1.55;
+    }
+
+    code { font-size: 0.9em; background: rgba(0, 0, 0, 0.05); padding: 0 4px; border-radius: 4px; }
+
+    .fallback-json {
+      margin: -6px 4px 12px;
+      font-size: 12px;
+      color: #78716c;
+      text-align: center;
+      line-height: 1.55;
+    }
+    .pick-json-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--leoao-orange-deep);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(255, 85, 32, 0.45);
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .pick-json-btn:hover {
+      filter: brightness(1.03);
+      background: var(--leoao-orange-soft);
+    }
+    #fallbackRow[hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="page-inner">
+    <nav style="text-align:center;margin-bottom:14px;">
+      <a href="../" style="color:#78716c;text-decoration:none;font-size:13px;">← 返回工具集</a>
+    </nav>
+    <header class="hero">
+      <h1 class="hero-title" id="elHeroTitle"></h1>
+    </header>
+
+    <div class="search-card">
+      <input id="keyword" class="keyword-input" type="search" maxlength="50" autocomplete="off" />
+      <button type="button" class="search-btn" id="btnSearch"></button>
+    </div>
+    <p class="tips" id="elTips"></p>
+
+    <div id="stateSlot"></div>
+    <p id="fallbackRow" class="fallback-json" hidden>
+      <button type="button" class="pick-json-btn" id="btnPickJson"></button>
+      <input type="file" id="inpJsonFile" accept=".json,application/json" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" tabindex="-1" />
+    </p>
+    <div id="toastLoading" class="toast toast--loading" style="display: none;"></div>
+    <div id="results" class="results" hidden></div>
+
+    <p class="footnote" id="elFootnote"></p>
+  </div>
+
+  <!-- Default data file from PC export; override e.g. window.__DATA_JSON_URL__ = 'https://.../leoao-stores-public.json' -->
+  <script>
+    window.__DATA_JSON_URL__ = './leoao-stores-public.json';
+  </script>
+  <script>
+(function () {
+  var KW_MAX = 50;
+  var RESULT_CAP = 50;
+
+  var T = {
+    docTitle: '\u95e8\u5e97\u7b49\u7ea7\u67e5\u8be2',
+    hero: '\u67e5\u627e\u95e8\u5e97\u7b49\u7ea7',
+    phKeyword: '\u8f93\u5165\u5e97\u540d\u5173\u952e\u5b57',
+    ariaKeyword: '\u95e8\u5e97\u540d\u79f0\u5173\u952e\u5b57',
+    btnSearch: '\u67e5\u8be2',
+    tips:
+      '\u672c\u9875\u4ece\u540c\u76ee\u5f55 <code>leoao-stores-public.json</code> \u8bfb\u53d6\uff1b<strong>\u5e97\u540d</strong>\u6a21\u7cca\u5339\u914d\uff0c\u6700\u591a ' +
+      RESULT_CAP +
+      ' \u6761\u3002\u5728 PC \u7ba1\u7406\u7aef\u300c\u4e50\u523b\u95e8\u5e97\u300d\u5bfc\u51fa JSON \u540e\u66ff\u6362\u8be5\u6587\u4ef6\u5373\u53ef\u3002',
+    loading: '\u6b63\u5728\u67e5\u8be2\u2026',
+    bootLoad: '\u6b63\u5728\u52a0\u8f7d\u6570\u636e\u2026',
+    foot:
+      '\u4fe1\u606f\u4ec5\u4f9b\u53c2\u8003\uff0c\u5982\u6709\u7591\u95ee\u8bf7\u54a8\u8be2\u5de5\u4f5c\u4eba\u5458\uff0c\u6570\u636e\u5f55\u5165\u65f6\u95f4\uff1a2026\u5e744\u6708\u5e95',
+    pickJsonBtn:
+      '\u4ece\u672c\u673a\u9009\u62e9 leoao-stores-public.json',
+    fileProtocolHint:
+      '\u52ff\u7528\u53cc\u51fb\u6253\u5f00 HTML\uff08file:\uff09\uff1b\u6d4f\u89c8\u5668\u7981\u6b62\u8bfb\u53d6\u540c\u76ee\u5f55 JSON\u3002\u8bf7\u7528 HTTPS \u8bbf\u95ee\u90e8\u7f72\u7ad9\u70b9\uff0c\u6216\u70b9\u4e0b\u65b9\u9009\u62e9\u5bfc\u51fa\u7684 JSON\u6587\u4ef6\u3002'
+  };
+
+  document.title = T.docTitle;
+  document.getElementById('elHeroTitle').textContent = T.hero;
+  var kw = document.getElementById('keyword');
+  kw.placeholder = T.phKeyword;
+  kw.setAttribute('aria-label', T.ariaKeyword);
+  document.getElementById('btnSearch').textContent = T.btnSearch;
+  document.getElementById('elTips').innerHTML = T.tips;
+  document.getElementById('elFootnote').textContent = T.foot;
+  document.getElementById('toastLoading').textContent = T.loading;
+  document.getElementById('btnPickJson').textContent = T.pickJsonBtn;
+
+  var keywordEl = kw;
+  var btnSearch = document.getElementById('btnSearch');
+  var stateSlot = document.getElementById('stateSlot');
+  var toastLoading = document.getElementById('toastLoading');
+  var resultsEl = document.getElementById('results');
+
+  var allStores = null;
+  var bootError = '';
+
+  /**
+   * Resolve JSON URL next to this page (fixes ./ with hrefs like /x/index.html or /x without trailing slash).
+   * Absolute http(s) values are returned as-is.
+   */
+  function resolveDataJsonHref() {
+    var custom = typeof window.__DATA_JSON_URL__ === 'string' ? window.__DATA_JSON_URL__.trim() : '';
+    if (/^https?:\/\//i.test(custom)) {
+      return custom;
+    }
+    if (custom.indexOf('/') === 0) {
+      try {
+        return new URL(custom, window.location.origin).href;
+      } catch (e3) {
+        return window.location.origin + custom;
+      }
+    }
+    var rel = custom !== '' ? custom.replace(/^\.\//, '') : 'leoao-stores-public.json';
+    var path = window.location.pathname || '/';
+    var dirPath;
+    if (/\.html?$/i.test(path)) {
+      dirPath = path.slice(0, path.lastIndexOf('/') + 1);
+    } else if (path.endsWith('/')) {
+      dirPath = path;
+    } else {
+      dirPath = path + '/';
+    }
+    try {
+      return new URL(rel, window.location.origin + dirPath).href;
+    } catch (e) {
+      return window.location.origin + dirPath + rel;
+    }
+  }
+
+  function showFallbackPicker() {
+    var row = document.getElementById('fallbackRow');
+    if (row) row.hidden = false;
+  }
+
+  function applyLoadedBody(body) {
+    allStores = extractStores(body);
+    bootError = '';
+    stateSlot.innerHTML = '';
+    if (allStores.length === 0) {
+      stateSlot.innerHTML =
+        '<div class="toast toast--empty">\u6570\u636e\u4e3a\u7a7a\uff0c\u8bf7\u5728 PC \u300c\u4e50\u523b\u95e8\u5e97\u300d\u5bfc\u51fa JSON \u540e\u4e0e index.html \u540c\u76ee\u5f55\u90e8\u7f72\u3002</div>';
+    }
+  }
+
+  function extractStores(parsed) {
+    if (parsed && Array.isArray(parsed.stores)) {
+      return parsed.stores;
+    }
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return [];
+  }
+
+  function escapeHtml(ch) {
+    var d = document.createElement('div');
+    d.textContent = String(ch);
+    return d.innerHTML;
+  }
+
+  function displayVal(v) {
+    if (v === undefined || v === null) return '\u2014';
+    var s = String(v).trim();
+    return s === '' ? '\u2014' : escapeHtml(s);
+  }
+
+  function joinDistrict(city, district) {
+    var parts = [];
+    if (city) parts.push(String(city).trim());
+    if (district) parts.push(String(district).trim());
+    if (!parts.length) return '\u2014';
+    return escapeHtml(parts.join(' \u00b7 '));
+  }
+
+  function levelLabel(gradeTypeId) {
+    if (gradeTypeId === undefined || gradeTypeId === null) return '\u2014';
+    return 'N' + String(gradeTypeId) + '\u7b49\u7ea7';
+  }
+
+  function renderList(rows) {
+    resultsEl.innerHTML = '';
+    if (!rows || !rows.length) {
+      resultsEl.hidden = true;
+      return;
+    }
+    resultsEl.hidden = false;
+    var html = '';
+    rows.forEach(function (item) {
+      html +=
+        '<article class="store-card">' +
+        '<h2 class="store-name">' +
+        displayVal(item.storeName) +
+        '</h2>' +
+        '<dl class="meta">' +
+        '<div class="meta-row"><dt>\u57ce\u5e02 / \u533a\u53bf</dt><dd>' +
+        joinDistrict(item.city, item.district) +
+        '</dd></div>' +
+        '<div class="meta-row meta-row--level"><dt>\u7b49\u7ea7</dt><dd>' +
+        '<span class="level-badge">' +
+        escapeHtml(levelLabel(item.gradeTypeId)) +
+        '</span></dd></div>' +
+        '<div class="meta-row meta-row--address"><dt>\u5730\u5740</dt><dd>' +
+        displayVal(item.address) +
+        '</dd></div>' +
+        '</dl></article>';
+    });
+    resultsEl.innerHTML = html;
+  }
+
+  function filterByStoreName(keyword, rows) {
+    var k = keyword.trim();
+    if (k.length > KW_MAX) {
+      k = k.substring(0, KW_MAX);
+    }
+    var out = [];
+    for (var i = 0; i < rows.length && out.length < RESULT_CAP; i++) {
+      var name = String(rows[i].storeName != null ? rows[i].storeName : '');
+      if (name.indexOf(k) !== -1) {
+        out.push(rows[i]);
+      }
+    }
+    return out;
+  }
+
+  function doSearch() {
+    stateSlot.innerHTML = '';
+    resultsEl.innerHTML = '';
+    resultsEl.hidden = true;
+
+    if (bootError) {
+      stateSlot.innerHTML = '<div class="toast toast--error">' + escapeHtml(bootError) + '</div>';
+      return;
+    }
+
+    var kwStr = (keywordEl.value || '').trim();
+    if (!kwStr) {
+      stateSlot.innerHTML =
+        '<div class="toast toast--empty">\u8bf7\u8f93\u5165\u5e97\u540d\u5173\u952e\u5b57</div>';
+      return;
+    }
+
+    if (allStores === null) {
+      if (window.location.protocol === 'file:') {
+        stateSlot.innerHTML =
+          '<div class="toast toast--empty">' + escapeHtml(T.fileProtocolHint) + '</div>';
+        showFallbackPicker();
+      } else {
+        stateSlot.innerHTML = '<div class="toast toast--loading">' + T.bootLoad + '</div>';
+      }
+      return;
+    }
+
+    var matched = filterByStoreName(kwStr, allStores);
+
+    if (matched.length === 0) {
+      stateSlot.innerHTML =
+        '<div class="toast toast--empty">\u6682\u65e0\u5339\u914d\u7684\u95e8\u5e97\uff0c\u6362\u4e2a\u8bcd\u8bd5\u8bd5</div>';
+      return;
+    }
+
+    stateSlot.innerHTML = '';
+    renderList(matched);
+  }
+
+  btnSearch.addEventListener('click', doSearch);
+
+  keywordEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      doSearch();
+    }
+  });
+
+  var inpJsonFile = document.getElementById('inpJsonFile');
+  var btnPickJson = document.getElementById('btnPickJson');
+  btnPickJson.addEventListener('click', function () {
+    if (inpJsonFile) inpJsonFile.click();
+  });
+  if (inpJsonFile) {
+    inpJsonFile.addEventListener('change', function () {
+      var f = inpJsonFile.files && inpJsonFile.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try {
+          applyLoadedBody(JSON.parse(rd.result));
+        } catch (e) {
+          bootError = '\u6587\u4ef6\u4e0d\u662f\u5408\u6cd5\u7684 JSON \u683c\u5f0f';
+          stateSlot.innerHTML = '<div class="toast toast--error">' + escapeHtml(bootError) + '</div>';
+          showFallbackPicker();
+        }
+        inpJsonFile.value = '';
+      };
+      rd.onerror = function () {
+        bootError = '\u8bfb\u53d6\u6587\u4ef6\u5931\u8d25';
+        stateSlot.innerHTML = '<div class="toast toast--error">' + escapeHtml(bootError) + '</div>';
+      };
+      rd.readAsText(f, 'UTF-8');
+    });
+  }
+
+  function hintFetchFailed(showPicker) {
+    bootError =
+      '\u65e0\u6cd5\u52a0\u8f7d ' +
+      resolveDataJsonHref() +
+      '\u3002\u8bf7\u786e\u8ba4\u5df2\u968f\u7ad9\u70b9\u4e00\u540c\u4e0a\u4f20\u8be5\u6587\u4ef6\uff1b\u82e5\u7528\u53cc\u51fb\u6253\u5f00 HTML\uff08file:\uff09\u8bf7\u6539\u7528 HTTPS \u6216\u4ece\u672c\u673a\u9009\u62e9 JSON\u3002';
+    stateSlot.innerHTML = '<div class="toast toast--error">' + escapeHtml(bootError) + '</div>';
+    if (showPicker) showFallbackPicker();
+  }
+
+  if (window.location.protocol === 'file:') {
+    stateSlot.innerHTML =
+      '<div class="toast toast--error">' +
+      escapeHtml(T.fileProtocolHint) +
+      '</div>';
+    showFallbackPicker();
+  } else {
+    stateSlot.innerHTML = '<div class="toast toast--loading">' + T.bootLoad + '</div>';
+
+    fetch(resolveDataJsonHref(), { method: 'GET', credentials: 'omit', cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + String(res.status));
+        return res.json();
+      })
+      .then(function (body) {
+        applyLoadedBody(body);
+      })
+      .catch(function () {
+        hintFetchFailed(true);
+      });
+  }
+})();
+  </script>
+</body>
+</html>
