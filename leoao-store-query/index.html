@@ -11,6 +11,9 @@
       --leoao-orange-deep: #e63e0a;
       --leoao-orange-soft: #fff0e8;
       --leoao-ink: #1a1a1a;
+      --leoao-hint-remind: #15803d;
+      --leoao-hint-remind-bg: rgba(34, 197, 94, 0.14);
+      --leoao-hint-remind-border: rgba(22, 163, 74, 0.38);
     }
     * { box-sizing: border-box; }
     body {
@@ -44,12 +47,67 @@
       font-weight: 500;
       color: #a8a29e;
       line-height: 1.55;
+      white-space: pre-line;
+    }
+    .hero-subtitle-mark {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--leoao-hint-remind);
+      padding: 3px 10px;
+      border-radius: 8px;
+      background: var(--leoao-hint-remind-bg);
+      border: 1px solid var(--leoao-hint-remind-border);
     }
 
-    .search-card {
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+    .filter-row {
       display: flex;
       gap: 10px;
       align-items: stretch;
+    }
+    .filter-row__city {
+      flex: 0 0 36%;
+      max-width: 11.5rem;
+      min-width: 6.75rem;
+    }
+    .filter-row__keyword {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .city-select {
+      width: 100%;
+      min-height: 46px;
+      padding: 0 40px 0 14px;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 0 0 1px #f0e0d8 inset;
+      background-color: rgba(255, 255, 255, 0.92);
+      color: var(--leoao-ink);
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a89f97' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    .city-select:focus { box-shadow: 0 0 0 2px rgba(255, 85, 32, 0.42); }
+
+    .search-card {
       margin-bottom: 14px;
       padding: 14px;
       background: rgba(255, 255, 255, 0.92);
@@ -59,7 +117,8 @@
       box-shadow: 0 8px 28px rgba(255, 85, 32, 0.1), 0 2px 10px rgba(204, 45, 26, 0.05);
     }
     .keyword-input {
-      flex: 1;
+      display: block;
+      width: 100%;
       border-radius: 12px;
       min-height: 46px;
       padding: 0 14px;
@@ -70,20 +129,6 @@
       outline: none;
     }
     .keyword-input:focus { box-shadow: 0 0 0 2px rgba(255, 85, 32, 0.42); }
-    .search-btn {
-      flex-shrink: 0;
-      min-width: 88px;
-      height: 46px;
-      font-weight: 700;
-      font-size: 15px;
-      color: #fff;
-      cursor: pointer;
-      border: none;
-      border-radius: 999px;
-      background: linear-gradient(145deg, var(--leoao-orange-deep) 0%, var(--leoao-orange) 52%, #ff7a3d 100%);
-    }
-    .search-btn:disabled { opacity: 0.75; cursor: not-allowed; }
-    .search-btn:not(:disabled):hover { filter: brightness(1.06); }
 
     .toast {
       text-align: center;
@@ -114,31 +159,71 @@
     .meta { margin: 0; }
     .meta-row {
       display: grid;
-      grid-template-columns: 86px 1fr;
-      gap: 10px 12px;
+      grid-template-columns: auto 1fr;
+      gap: 10px 14px;
       align-items: start;
       padding: 10px 0;
       border-top: 1px solid #f4f0eb;
       font-size: 14px;
     }
     .meta-row:first-of-type { border-top: none; padding-top: 0; }
-    .meta-row dt { margin: 0; font-weight: 500; color: #a89f97; }
+    .meta-row dt {
+      margin: 0;
+      font-weight: 500;
+      color: #a89f97;
+      white-space: nowrap;
+      line-height: 1.55;
+    }
     .meta-row dd { margin: 0; color: #3d3d3d; line-height: 1.55; word-break: break-word; }
     .meta-row--address dd { color: #6b6560; font-size: 13px; }
+
+    .meta-row--level {
+      align-items: center;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+    .meta-row--level dt {
+      color: #8c857d;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .meta-row--level dd {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: flex-end;
+      gap: 8px;
+    }
 
     .level-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 4.5rem;
-      padding: 7px 16px;
-      font-size: 14px;
-      font-weight: 800;
-      color: #fff;
+      flex-shrink: 0;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--leoao-orange-deep);
       white-space: nowrap;
-      background: linear-gradient(135deg, #ee3a1f 0%, var(--leoao-orange) 42%, #ff8f4d 100%);
+      background: linear-gradient(180deg, #fff8f4 0%, var(--leoao-orange-soft) 100%);
+      border: 1px solid rgba(255, 85, 32, 0.28);
       border-radius: 999px;
-      box-shadow: 0 4px 14px rgba(255, 85, 32, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      box-shadow: 0 1px 2px rgba(204, 45, 26, 0.06);
+    }
+
+    .level-support-hint {
+      font-size: 8px;
+      font-weight: 600;
+      color: var(--leoao-hint-remind);
+      line-height: 1.28;
+      white-space: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
+      margin: 0;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: var(--leoao-hint-remind-bg);
+      border: 1px solid var(--leoao-hint-remind-border);
     }
 
     .fallback-json {
@@ -173,12 +258,19 @@
   <div class="page-inner">
     <header class="hero">
       <h1 class="hero-title" id="elHeroTitle"></h1>
-      <p class="hero-subtitle">查询结果仅供参考，数据更新时间：2026年4月底</p>
+      <p class="hero-subtitle" id="heroSubtitle"></p>
     </header>
 
     <div class="search-card">
-      <input id="keyword" class="keyword-input" type="search" maxlength="50" autocomplete="off" />
-      <button type="button" class="search-btn" id="btnSearch"></button>
+      <div class="filter-row">
+        <div class="filter-row__city">
+          <label for="citySelect" class="city-label visually-hidden" id="cityLabel"></label>
+          <select id="citySelect" class="city-select"></select>
+        </div>
+        <div class="filter-row__keyword">
+          <input id="keyword" class="keyword-input" type="search" maxlength="50" autocomplete="off" />
+        </div>
+      </div>
     </div>
 
     <div id="stateSlot"></div>
@@ -199,41 +291,114 @@
   var RESULT_CAP = 50;
 
   var T = {
-    docTitle: '\u67e5\u8be2\u95e8\u5e97\u7b49\u7ea7',
-    hero: '\u67e5\u8be2\u95e8\u5e97\u7b49\u7ea7',
-    phKeyword: '\u8f93\u5165\u5e97\u540d\u5173\u952e\u5b57',
-    ariaKeyword: '\u95e8\u5e97\u540d\u79f0\u5173\u952e\u5b57',
-    btnSearch: '\u67e5\u8be2',
-    loading: '\u6b63\u5728\u67e5\u8be2\u2026',
-    bootLoad: '\u6b63\u5728\u52a0\u8f7d\u2026',
-    pickJsonBtn: '\u9009\u62e9 JSON',
-    fileProtocolHint: '\u8bf7\u7528 HTTPS \u8bbf\u95ee\u6216\u9009\u62e9\u672c\u5730 JSON',
-    loadFail: '\u6570\u636e\u52a0\u8f7d\u5931\u8d25',
-    emptyData: '\u6682\u65e0\u53ef\u67e5\u6570\u636e'
+    docTitle: '乐刻-乐刻健身门店',
+    hero: '乐刻-乐刻健身门店',
+    phKeyword: '输入店名关键词',
+    ariaKeyword: '门店名称关键词',
+    loading: '正在查询…',
+    bootLoad: '正在加载…',
+    pickJsonBtn: '选择门店数据文件',
+    fileProtocolHint: '请使用完整网址打开本页，或选择本地已下载的门店数据文件。',
+    loadFail: '数据加载失败',
+    emptyData: '暂无可查数据',
+    cityLabel: '城市',
+    heroSubtitleLine1: '查询结果仅供参考，数据更新时间：2026年4月底。',
+    heroSubtitleLine2: '闲鱼店铺：健身房男孩女孩',
+    cityAll: '全部城市'
   };
+
+  /** 城市下拉：按体量大致排序（仅用于列表顺序与筛选）。 */
+  var CITIES_ORDERED = [
+    '北京市',
+    '上海市',
+    '广州市',
+    '深圳市',
+    '成都市',
+    '杭州市',
+    '重庆市',
+    '武汉市',
+    '西安市',
+    '苏州市',
+    '南京市',
+    '郑州市',
+    '长沙市',
+    '天津市',
+    '青岛市',
+    '宁波市',
+    '无锡市',
+    '佛山市',
+    '合肥市',
+    '济南市',
+    '昆明市',
+    '福州市',
+    '石家庄市',
+    '南昌市',
+    '南宁市',
+    '太原市',
+    '温州市',
+    '常州市',
+    '徐州市',
+    '珠海市',
+    '南通市',
+    '绍兴市',
+    '嘉兴市',
+    '湖州市',
+    '扬州市',
+    '洛阳市',
+    '东莞市',
+    '中山市',
+    '廊坊市',
+    '保定市',
+    '唐山市',
+    '沧州市',
+    '蚌埠市',
+    '淮安市',
+    '株洲市',
+    '宜昌市',
+    '咸阳市',
+    '贵阳市',
+    '银川市',
+    '兰州市'
+  ];
+
+  function fillCitySelect() {
+    var sel = document.getElementById('citySelect');
+    if (!sel) return;
+    sel.innerHTML = '';
+    var opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = T.cityAll;
+    sel.appendChild(opt0);
+    CITIES_ORDERED.forEach(function (c) {
+      var o = document.createElement('option');
+      o.value = c;
+      o.textContent = c;
+      sel.appendChild(o);
+    });
+  }
 
   document.title = T.docTitle;
   document.getElementById('elHeroTitle').textContent = T.hero;
+  document.getElementById('cityLabel').textContent = T.cityLabel;
+  fillCitySelect();
+  var citySelectEl = document.getElementById('citySelect');
   var kw = document.getElementById('keyword');
   kw.placeholder = T.phKeyword;
   kw.setAttribute('aria-label', T.ariaKeyword);
-  document.getElementById('btnSearch').textContent = T.btnSearch;
   document.getElementById('toastLoading').textContent = T.loading;
   document.getElementById('btnPickJson').textContent = T.pickJsonBtn;
 
   var keywordEl = kw;
-  var btnSearch = document.getElementById('btnSearch');
   var stateSlot = document.getElementById('stateSlot');
   var toastLoading = document.getElementById('toastLoading');
   var resultsEl = document.getElementById('results');
 
   var allStores = null;
   var bootError = '';
+  var INPUT_DEBOUNCE_MS = 200;
+  var searchTimer = null;
 
-  /**
-   * Resolve JSON URL next to this page (fixes ./ with hrefs like /x/index.html or /x without trailing slash).
-   * Absolute http(s) values are returned as-is.
-   */
+  /** 解析门店数据文件地址（处理目录路径、绝对网址等）。 */
   function resolveDataJsonHref() {
     var custom = typeof window.__DATA_JSON_URL__ === 'string' ? window.__DATA_JSON_URL__.trim() : '';
     if (/^https?:\/\//i.test(custom)) {
@@ -274,6 +439,8 @@
     stateSlot.innerHTML = '';
     if (allStores.length === 0) {
       stateSlot.innerHTML = '<div class="toast toast--empty">' + escapeHtml(T.emptyData) + '</div>';
+    } else {
+      doSearch();
     }
   }
 
@@ -293,23 +460,76 @@
     return d.innerHTML;
   }
 
+  (function renderHeroSubtitle() {
+    var el = document.getElementById('heroSubtitle');
+    if (!el) return;
+    el.innerHTML =
+      escapeHtml(T.heroSubtitleLine1) +
+      '<br />' +
+      '<span class="hero-subtitle-mark">' +
+      escapeHtml(T.heroSubtitleLine2) +
+      '</span>';
+  })();
+
   function displayVal(v) {
-    if (v === undefined || v === null) return '\u2014';
+    if (v === undefined || v === null) return '—';
     var s = String(v).trim();
-    return s === '' ? '\u2014' : escapeHtml(s);
+    return s === '' ? '—' : escapeHtml(s);
   }
 
   function joinDistrict(city, district) {
     var parts = [];
     if (city) parts.push(String(city).trim());
     if (district) parts.push(String(district).trim());
-    if (!parts.length) return '\u2014';
-    return escapeHtml(parts.join(' \u00b7 '));
+    if (!parts.length) return '—';
+    return escapeHtml(parts.join(' · '));
   }
 
   function levelLabel(gradeTypeId) {
-    if (gradeTypeId === undefined || gradeTypeId === null) return '\u2014';
-    return 'N' + String(gradeTypeId) + '\u7b49\u7ea7';
+    if (gradeTypeId === undefined || gradeTypeId === null) return '—';
+    return 'N' + String(gradeTypeId) + '等级';
+  }
+
+  /** 等级向下兼容：统计全量数据中等级编号不大于当前门店的门店数。 */
+  function cumulativeSupportStoreCount(pool, gradeTypeId) {
+    if (!pool || !pool.length) {
+      return null;
+    }
+    if (gradeTypeId === undefined || gradeTypeId === null || gradeTypeId === '') {
+      return null;
+    }
+    var g = Number(gradeTypeId);
+    if (Number.isNaN(g)) {
+      return null;
+    }
+    var n = 0;
+    for (var i = 0; i < pool.length; i++) {
+      var raw = pool[i].gradeTypeId;
+      if (raw === undefined || raw === null || raw === '') {
+        continue;
+      }
+      var gv = Number(raw);
+      if (Number.isNaN(gv)) {
+        continue;
+      }
+      if (gv <= g) {
+        n++;
+      }
+    }
+    return n;
+  }
+
+  function levelSupportHintHtml(gradeTypeId) {
+    var cnt = cumulativeSupportStoreCount(allStores, gradeTypeId);
+    if (cnt === null) {
+      return '';
+    }
+    var formatted = cnt.toLocaleString('zh-CN');
+    return (
+      '<span class="level-support-hint">约' +
+      escapeHtml(formatted) +
+      ' 家门店，具体以APP为准</span>'
+    );
   }
 
   function renderList(rows) {
@@ -327,14 +547,16 @@
         displayVal(item.storeName) +
         '</h2>' +
         '<dl class="meta">' +
-        '<div class="meta-row"><dt>\u57ce\u5e02 / \u533a\u53bf</dt><dd>' +
+        '<div class="meta-row"><dt>城市 / 区县</dt><dd>' +
         joinDistrict(item.city, item.district) +
         '</dd></div>' +
-        '<div class="meta-row meta-row--level"><dt>\u7b49\u7ea7</dt><dd>' +
+        '<div class="meta-row meta-row--level"><dt>门店等级</dt><dd>' +
         '<span class="level-badge">' +
         escapeHtml(levelLabel(item.gradeTypeId)) +
-        '</span></dd></div>' +
-        '<div class="meta-row meta-row--address"><dt>\u5730\u5740</dt><dd>' +
+        '</span>' +
+        levelSupportHintHtml(item.gradeTypeId) +
+        '</dd></div>' +
+        '<div class="meta-row meta-row--address"><dt>门店地址</dt><dd>' +
         displayVal(item.address) +
         '</dd></div>' +
         '</dl></article>';
@@ -342,13 +564,24 @@
     resultsEl.innerHTML = html;
   }
 
-  function filterByStoreName(keyword, rows) {
+  function rowMatchesCity(row, cityFilter) {
+    if (!cityFilter || !String(cityFilter).trim()) {
+      return true;
+    }
+    return String(row.city != null ? row.city : '').trim() === String(cityFilter).trim();
+  }
+
+  function filterStores(keyword, rows, cityFilter) {
     var k = keyword.trim();
     if (k.length > KW_MAX) {
       k = k.substring(0, KW_MAX);
     }
+    var cf = cityFilter != null ? String(cityFilter).trim() : '';
     var out = [];
     for (var i = 0; i < rows.length && out.length < RESULT_CAP; i++) {
+      if (!rowMatchesCity(rows[i], cf)) {
+        continue;
+      }
       var name = String(rows[i].storeName != null ? rows[i].storeName : '');
       if (name.indexOf(k) !== -1) {
         out.push(rows[i]);
@@ -369,8 +602,9 @@
 
     var kwStr = (keywordEl.value || '').trim();
     if (!kwStr) {
-      stateSlot.innerHTML =
-        '<div class="toast toast--empty">\u8bf7\u8f93\u5165\u5e97\u540d\u5173\u952e\u5b57</div>';
+      stateSlot.innerHTML = '';
+      resultsEl.innerHTML = '';
+      resultsEl.hidden = true;
       return;
     }
 
@@ -385,11 +619,12 @@
       return;
     }
 
-    var matched = filterByStoreName(kwStr, allStores);
+    var cityVal = citySelectEl ? citySelectEl.value : '';
+    var matched = filterStores(kwStr, allStores, cityVal);
 
     if (matched.length === 0) {
       stateSlot.innerHTML =
-        '<div class="toast toast--empty">\u6682\u65e0\u5339\u914d\u7684\u95e8\u5e97\uff0c\u6362\u4e2a\u8bcd\u8bd5\u8bd5</div>';
+        '<div class="toast toast--empty">暂无匹配的门店，换个词试试</div>';
       return;
     }
 
@@ -397,14 +632,38 @@
     renderList(matched);
   }
 
-  btnSearch.addEventListener('click', doSearch);
-
-  keywordEl.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      doSearch();
+  function scheduleSearch() {
+    if (searchTimer != null) {
+      clearTimeout(searchTimer);
     }
+    searchTimer = setTimeout(function () {
+      searchTimer = null;
+      doSearch();
+    }, INPUT_DEBOUNCE_MS);
+  }
+
+  keywordEl.addEventListener('input', function () {
+    var s = (keywordEl.value || '').trim();
+    if (!s) {
+      if (searchTimer != null) {
+        clearTimeout(searchTimer);
+        searchTimer = null;
+      }
+      doSearch();
+      return;
+    }
+    scheduleSearch();
   });
+
+  if (citySelectEl) {
+    citySelectEl.addEventListener('change', function () {
+      if (searchTimer != null) {
+        clearTimeout(searchTimer);
+        searchTimer = null;
+      }
+      doSearch();
+    });
+  }
 
   var inpJsonFile = document.getElementById('inpJsonFile');
   var btnPickJson = document.getElementById('btnPickJson');
@@ -420,14 +679,14 @@
         try {
           applyLoadedBody(JSON.parse(rd.result));
         } catch (e) {
-          bootError = '\u6587\u4ef6\u4e0d\u662f\u5408\u6cd5\u7684 JSON \u683c\u5f0f';
+          bootError = '所选文件内容格式不正确，无法解析为门店数据';
           stateSlot.innerHTML = '<div class="toast toast--error">' + escapeHtml(bootError) + '</div>';
           showFallbackPicker();
         }
         inpJsonFile.value = '';
       };
       rd.onerror = function () {
-        bootError = '\u8bfb\u53d6\u6587\u4ef6\u5931\u8d25';
+        bootError = '读取文件失败';
         stateSlot.innerHTML = '<div class="toast toast--error">' + escapeHtml(bootError) + '</div>';
       };
       rd.readAsText(f, 'UTF-8');
@@ -451,7 +710,7 @@
 
     fetch(resolveDataJsonHref(), { method: 'GET', credentials: 'omit', cache: 'no-store' })
       .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + String(res.status));
+        if (!res.ok) throw new Error('网络请求失败（' + String(res.status) + '）');
         return res.json();
       })
       .then(function (body) {
